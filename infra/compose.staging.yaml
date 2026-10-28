@@ -1,0 +1,95 @@
+# Staging stack. Requires the edge stack (compose.edge.yaml) to be running.
+#   docker compose --env-file infra/.env -f infra/compose.staging.yaml up -d
+name: virageawie-staging
+
+x-app-env: &app-env
+  APP_NAME: VIRAGEAWIE
+  APP_ENV: staging
+  APP_DEBUG: "false"
+  APP_KEY: ${STG_APP_KEY:?}
+  APP_URL: https://${STAGING_APP_HOST:?}
+  APP_LOCALE: id
+  APP_FALLBACK_LOCALE: en
+  APP_FAKER_LOCALE: id_ID
+  APP_TIMEZONE: Asia/Jakarta
+  LOG_CHANNEL: stderr
+  LOG_LEVEL: ${STG_LOG_LEVEL:-info}
+  DB_CONNECTION: pgsql
+  DB_HOST: postgres-stg
+  DB_PORT: "5432"
+  DB_DATABASE: ${STG_DB_DATABASE:?}
+  DB_USERNAME: ${STG_DB_USERNAME:?}
+  DB_PASSWORD: ${STG_DB_PASSWORD:?}
+  SESSION_DRIVER: database
+  SESSION_SECURE_COOKIE: "true"
+  CACHE_STORE: database
+  QUEUE_CONNECTION: database
+  MAIL_MAILER: ${STG_MAIL_MAILER:-log}
+  MAIL_HOST: ${STG_MAIL_HOST:-}
+  MAIL_PORT: ${STG_MAIL_PORT:-587}
+  MAIL_USERNAME: ${STG_MAIL_USERNAME:-}
+  MAIL_PASSWORD: ${STG_MAIL_PASSWORD:-}
+  MAIL_FROM_ADDRESS: ${STG_MAIL_FROM_ADDRESS:?}
+
+x-app-image: &app-image ${APP_IMAGE:?}:${APP_IMAGE_TAG:?}
+
+services:
+  app-stg:
+    image: *app-image
+    restart: unless-stopped
+    environment: *app-env
+    depends_on:
+      postgres-stg:
+        condition: service_healthy
+    networks:
+      internal_stg:
+      edge:
+        aliases:
+          - virageawie-app-stg
+
+  worker-stg:
+    image: *app-image
+    restart: unless-stopped
+    command: ["php", "artisan", "queue:work", "--tries=3", "--max-time=3600"]
+    environment: *app-env
+    healthcheck:
+      disable: true
+    depends_on:
+      postgres-stg:
+        condition: service_healthy
+    networks:
+      - internal_stg
+      - egress_stg
+
+  postgres-stg:
+    image: postgres:18
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${STG_DB_DATABASE:?}
+      POSTGRES_USER: ${STG_DB_USERNAME:?}
+      POSTGRES_PASSWORD: ${STG_DB_PASSWORD:?}
+      TZ: Asia/Jakarta
+    volumes:
+      # PostgreSQL 18 images keep data in /var/lib/postgresql/18/docker.
+      - postgres_stg:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\""]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - internal_stg
+
+networks:
+  internal_stg:
+    name: virageawie_internal_stg
+    internal: true
+  # Outbound access (mail) for the worker only.
+  egress_stg:
+    name: virageawie_egress_stg
+  edge:
+    name: virageawie_edge
+    external: true
+
+volumes:
+  postgres_stg:

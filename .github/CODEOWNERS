@@ -1,0 +1,21 @@
+# Owners must review changes to the sensitive zones below.
+# Replace @REPLACE_ME with real GitHub users or teams (for example @org/backend).
+
+# Inventory and cash logic
+/src/app/Domain/Inventory/        @REPLACE_ME
+/src/app/Domain/Cash/             @REPLACE_ME
+
+# Database migrations
+/src/database/migrations/         @REPLACE_ME
+
+# Authorization and authentication
+/src/app/Policies/                @REPLACE_ME
+/src/app/Http/Middleware/         @REPLACE_ME
+/src/config/auth.php              @REPLACE_ME
+
+# Infrastructure and pipelines
+/infra/                           @REPLACE_ME
+/.github/workflows/               @REPLACE_ME
+
+# Golden dataset for money and inventory tests
+/src/tests/Fixtures/golden/       @REPLACE_ME

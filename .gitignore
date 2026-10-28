@@ -1,0 +1,30 @@
+# Operating system
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editors
+.idea/
+.vscode/
+.fleet/
+.zed/
+*.swp
+*~
+
+# Environment files
+src/.env
+src/.env.*
+!src/.env.example
+infra/.env
+infra/.env.*
+!infra/.env.example
+
+# Build outputs and dependencies
+src/vendor/
+src/node_modules/
+src/public/build/
+src/public/hot
+src/bootstrap/ssr/
+
+# Logs
+*.log

@@ -1,0 +1,31 @@
+{
+	email {$ACME_EMAIL}
+}
+
+(security_headers) {
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=()"
+		Cross-Origin-Opener-Policy "same-origin"
+		-Server
+		-X-Powered-By
+	}
+}
+
+# Production, for example app.virageawie.com
+{$PROD_APP_HOST} {
+	import security_headers
+	encode zstd gzip
+	reverse_proxy virageawie-app:8000
+}
+
+# Staging, for example staging-app.virageawie.com
+{$STAGING_APP_HOST} {
+	import security_headers
+	header X-Robots-Tag "noindex, nofollow"
+	encode zstd gzip
+	reverse_proxy virageawie-app-stg:8000
+}

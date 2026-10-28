@@ -1,0 +1,121 @@
+# Production stack. Requires the edge stack (compose.edge.yaml) to be running.
+#   docker compose --env-file infra/.env -f infra/compose.prod.yaml up -d
+name: virageawie-prod
+
+x-app-env: &app-env
+  APP_NAME: VIRAGEAWIE
+  APP_ENV: production
+  APP_DEBUG: "false"
+  APP_KEY: ${PROD_APP_KEY:?}
+  APP_URL: https://${PROD_APP_HOST:?}
+  APP_LOCALE: id
+  APP_FALLBACK_LOCALE: en
+  APP_FAKER_LOCALE: id_ID
+  APP_TIMEZONE: Asia/Jakarta
+  LOG_CHANNEL: stderr
+  LOG_LEVEL: ${PROD_LOG_LEVEL:-warning}
+  DB_CONNECTION: pgsql
+  DB_HOST: postgres
+  DB_PORT: "5432"
+  DB_DATABASE: ${PROD_DB_DATABASE:?}
+  DB_USERNAME: ${PROD_DB_USERNAME:?}
+  DB_PASSWORD: ${PROD_DB_PASSWORD:?}
+  SESSION_DRIVER: database
+  SESSION_SECURE_COOKIE: "true"
+  CACHE_STORE: database
+  QUEUE_CONNECTION: database
+  MAIL_MAILER: ${PROD_MAIL_MAILER:-smtp}
+  MAIL_HOST: ${PROD_MAIL_HOST:?}
+  MAIL_PORT: ${PROD_MAIL_PORT:-587}
+  MAIL_USERNAME: ${PROD_MAIL_USERNAME:?}
+  MAIL_PASSWORD: ${PROD_MAIL_PASSWORD:?}
+  MAIL_FROM_ADDRESS: ${PROD_MAIL_FROM_ADDRESS:?}
+
+x-app-image: &app-image ${APP_IMAGE:?}:${APP_IMAGE_TAG:?}
+
+services:
+  app:
+    image: *app-image
+    restart: unless-stopped
+    environment: *app-env
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      internal_prod:
+      edge:
+        aliases:
+          - virageawie-app
+
+  worker:
+    image: *app-image
+    restart: unless-stopped
+    command: ["php", "artisan", "queue:work", "--tries=3", "--max-time=3600"]
+    environment: *app-env
+    healthcheck:
+      disable: true
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - internal_prod
+      - egress_prod
+
+  postgres:
+    image: postgres:18
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${PROD_DB_DATABASE:?}
+      POSTGRES_USER: ${PROD_DB_USERNAME:?}
+      POSTGRES_PASSWORD: ${PROD_DB_PASSWORD:?}
+      TZ: Asia/Jakarta
+    volumes:
+      # PostgreSQL 18 images keep data in /var/lib/postgresql/18/docker.
+      - postgres_prod:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\""]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - internal_prod
+
+  backup:
+    build:
+      context: ./backup
+    image: virageawie-backup:1
+    restart: unless-stopped
+    environment:
+      PGHOST: postgres
+      PGPORT: "5432"
+      PGDATABASE: ${PROD_DB_DATABASE:?}
+      PGUSER: ${PROD_DB_USERNAME:?}
+      PGPASSWORD: ${PROD_DB_PASSWORD:?}
+      BACKUP_AGE_RECIPIENT: ${BACKUP_AGE_RECIPIENT:?}
+      BACKUP_RETENTION_DAYS: ${BACKUP_RETENTION_DAYS:-14}
+      BACKUP_SCHEDULE: ${BACKUP_SCHEDULE:-0 2 * * *}
+      R2_ACCOUNT_ID: ${R2_ACCOUNT_ID:?}
+      R2_ACCESS_KEY_ID: ${R2_ACCESS_KEY_ID:?}
+      R2_SECRET_ACCESS_KEY: ${R2_SECRET_ACCESS_KEY:?}
+      R2_BUCKET: ${R2_BUCKET:?}
+      R2_PREFIX: ${R2_PREFIX:-postgres}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - internal_prod
+      - egress_prod
+
+networks:
+  internal_prod:
+    name: virageawie_internal_prod
+    internal: true
+  # Outbound access (mail, R2) for the worker and backup only.
+  egress_prod:
+    name: virageawie_egress_prod
+  edge:
+    name: virageawie_edge
+    external: true
+
+volumes:
+  postgres_prod:

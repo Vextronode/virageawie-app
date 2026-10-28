@@ -1,0 +1,35 @@
+# Shared HTTPS edge proxy for staging and production. Start this first:
+#   docker compose --env-file infra/.env -f infra/compose.edge.yaml up -d
+name: virageawie-edge
+
+services:
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    environment:
+      ACME_EMAIL: ${ACME_EMAIL:?}
+      PROD_APP_HOST: ${PROD_APP_HOST:?}
+      STAGING_APP_HOST: ${STAGING_APP_HOST:?}
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - edge
+      - public
+
+networks:
+  # Only the proxy and the app containers join this network; it has no route out.
+  edge:
+    name: virageawie_edge
+    internal: true
+  # Published ports and certificate issuance.
+  public:
+
+volumes:
+  caddy_data:
+  caddy_config:
