@@ -1,0 +1,99 @@
+name: Deploy production
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag already verified on staging, for example v1.2.3"
+        type: string
+        required: true
+
+permissions:
+  contents: read
+  packages: read
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Promote ${{ inputs.tag }} to production
+    if: vars.DEPLOY_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    environment: production
+    env:
+      TAG: ${{ inputs.tag }}
+      SSH_HOST: ${{ secrets.SSH_HOST }}
+      SSH_USER: ${{ secrets.SSH_USER }}
+      DEPLOY_PATH: ${{ vars.DEPLOY_PATH }}
+    steps:
+      - name: Check release approver
+        env:
+          ACTOR: ${{ github.actor }}
+          APPROVERS: ${{ vars.RELEASE_APPROVERS }}
+        run: |
+          IFS=',' read -r -a approvers <<< "$APPROVERS"
+          for approver in "${approvers[@]}"; do
+            approver="$(printf '%s' "$approver" | tr -d '[:space:]')"
+            if [ -n "$approver" ] && [ "$approver" = "$ACTOR" ]; then
+              echo "$ACTOR is a release approver."
+              exit 0
+            fi
+          done
+          echo "::error::$ACTOR is not listed in RELEASE_APPROVERS."
+          exit 1
+
+      - name: Validate tag
+        run: |
+          if ! printf '%s' "$TAG" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "::error::Tag '$TAG' is not of the form vX.Y.Z."
+            exit 1
+          fi
+          echo "IMAGE=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_ENV"
+
+      - name: Checkout release tag
+        uses: actions/checkout@v7
+        with:
+          ref: refs/tags/${{ inputs.tag }}
+          persist-credentials: false
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Check release image exists
+        run: |
+          if ! docker manifest inspect "$IMAGE:$TAG" > /dev/null 2>&1; then
+            echo "::error::$IMAGE:$TAG was not found. Production only receives images built by the release workflow."
+            exit 1
+          fi
+
+      - name: Configure SSH
+        env:
+          SSH_KEY: ${{ secrets.PROD_SSH_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+
+      - name: Upload infrastructure files
+        run: |
+          tar -C infra -czf - compose.edge.yaml compose.staging.yaml compose.prod.yaml caddy backup \
+            | ssh -i ~/.ssh/deploy_key "$SSH_USER@$SSH_HOST" \
+                "mkdir -p '$DEPLOY_PATH/infra' && tar -C '$DEPLOY_PATH/infra' -xzf -"
+
+      - name: Back up, pull, migrate, restart
+        run: |
+          ssh -i ~/.ssh/deploy_key "$SSH_USER@$SSH_HOST" \
+            "bash -s -- prod '$DEPLOY_PATH' '$IMAGE' '$TAG'" < .github/scripts/remote-deploy.sh
+
+      - name: Health check
+        env:
+          APP_HOST: ${{ vars.PROD_APP_HOST }}
+        run: curl --fail --silent --show-error --retry 10 --retry-delay 6 --retry-all-errors "https://$APP_HOST/up"

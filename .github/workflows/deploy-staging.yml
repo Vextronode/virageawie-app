@@ -1,0 +1,62 @@
+name: Deploy staging
+
+# Reusable workflow, called by build-dev.yml and release.yml only.
+on:
+  workflow_call:
+    inputs:
+      image:
+        type: string
+        required: true
+      tag:
+        type: string
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    name: Deploy ${{ inputs.tag }} to staging
+    if: vars.DEPLOY_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    environment: staging
+    concurrency:
+      group: deploy-staging
+      cancel-in-progress: false
+    env:
+      SSH_HOST: ${{ secrets.SSH_HOST }}
+      SSH_USER: ${{ secrets.SSH_USER }}
+      DEPLOY_PATH: ${{ vars.DEPLOY_PATH }}
+      IMAGE: ${{ inputs.image }}
+      TAG: ${{ inputs.tag }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Configure SSH
+        env:
+          SSH_KEY: ${{ secrets.STAGING_SSH_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+
+      - name: Upload infrastructure files
+        run: |
+          tar -C infra -czf - compose.edge.yaml compose.staging.yaml compose.prod.yaml caddy backup \
+            | ssh -i ~/.ssh/deploy_key "$SSH_USER@$SSH_HOST" \
+                "mkdir -p '$DEPLOY_PATH/infra' && tar -C '$DEPLOY_PATH/infra' -xzf -"
+
+      - name: Deploy
+        run: |
+          ssh -i ~/.ssh/deploy_key "$SSH_USER@$SSH_HOST" \
+            "bash -s -- staging '$DEPLOY_PATH' '$IMAGE' '$TAG'" < .github/scripts/remote-deploy.sh
+
+      - name: Health check
+        env:
+          APP_HOST: ${{ vars.STAGING_APP_HOST }}
+        run: curl --fail --silent --show-error --retry 10 --retry-delay 6 --retry-all-errors "https://$APP_HOST/up"
