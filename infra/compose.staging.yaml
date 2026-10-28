@@ -43,7 +43,7 @@ services:
         condition: service_healthy
     networks:
       internal_stg:
-      edge:
+      edge_stg:
         aliases:
           - virageawie-app-stg
 
@@ -87,8 +87,8 @@ networks:
   # Outbound access (mail) for the worker only.
   egress_stg:
     name: virageawie_egress_stg
-  edge:
-    name: virageawie_edge
+  edge_stg:
+    name: virageawie_edge_stg
     external: true
 
 volumes:

@@ -52,8 +52,15 @@ jobs:
             echo "LOCAL_ONLY_PATHS is not set; nothing to check."
             exit 0
           fi
-          read -r -a paths <<< "$LOCAL_ONLY_PATHS"
-          tracked="$(git ls-files -- "${paths[@]}")"
+          # Each entry matches that file or folder at the root and at any depth.
+          read -r -a entries <<< "$LOCAL_ONLY_PATHS"
+          pathspecs=()
+          for entry in "${entries[@]}"; do
+            entry="${entry#/}"
+            entry="${entry%/}"
+            pathspecs+=(":(glob)**/$entry" ":(glob)**/$entry/**")
+          done
+          tracked="$(git ls-files -- "${pathspecs[@]}" | sort -u)"
           if [ -n "$tracked" ]; then
             echo "::error::These files must stay local and may not be committed:"
             echo "$tracked"

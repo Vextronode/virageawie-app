@@ -48,6 +48,36 @@ Aplikasi web progresif (PWA) untuk pencatatan kas dan persediaan barang. Aplikas
    composer dev
    ```
 
+### Menjalankan tanpa PHP 8.4 di host
+
+Jika versi PHP di komputer bukan 8.4 atau ekstensinya tidak lengkap, gunakan image alat pengembangan di `infra/dev/Dockerfile`. Image ini berisi PHP 8.4 beserta ekstensi yang dibutuhkan, Composer 2, dan Node.js 24. Image ini hanya untuk pengembangan dan tidak dipakai di produksi.
+
+1. Bangun image sekali dari folder akar repositori:
+
+   ```bash
+   docker build -t virageawie-tools:local infra/dev
+   ```
+
+2. Buat alias di shell (Linux, WSL, atau macOS) agar perintah dijalankan di dalam container dengan folder `src/` sebagai direktori kerja:
+
+   ```bash
+   alias vt='docker run --rm -it --network host --user "$(id -u):$(id -g)" -v "$PWD":/repo -w /repo/src virageawie-tools:local'
+   ```
+
+   Jalankan alias dari folder akar repositori. Opsi `--network host` membuat container dapat mengakses PostgreSQL di `127.0.0.1:5432`.
+
+3. Gunakan untuk Composer, Artisan, dan npm:
+
+   ```bash
+   vt composer install
+   vt php artisan migrate
+   vt composer test
+   vt npm ci
+   vt npm run build
+   ```
+
+Folder `vendor/` dan `node_modules/` yang dipasang melalui container berisi paket untuk Linux. Jika kemudian beralih ke PHP atau Node.js di Windows, jalankan ulang `composer install` dan `npm ci` di host.
+
 ## Perintah pengujian dan pemeriksaan
 
 Seluruh perintah dijalankan dari folder `src/`.
@@ -59,8 +89,8 @@ Seluruh perintah dijalankan dari folder `src/`.
 | `composer lint` | Memeriksa gaya kode PHP dengan Laravel Pint |
 | `composer format` | Merapikan gaya kode PHP |
 | `composer analyse` | Analisis statis dengan Larastan (level 6) |
-| `npm run lint` | Memeriksa kode TypeScript dan React |
-| `npm run format:check` | Memeriksa format kode frontend |
+| `npm run lint` | Memeriksa kode TypeScript dan React dengan Oxlint (melalui Vite+) |
+| `npm run format:check` | Memeriksa format kode frontend dengan Oxfmt (melalui Vite+) |
 | `npm run types` | Pemeriksaan tipe TypeScript |
 | `npm run build` | Membangun aset produksi |
 

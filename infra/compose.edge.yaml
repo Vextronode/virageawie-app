@@ -19,13 +19,18 @@ services:
       - caddy_data:/data
       - caddy_config:/config
     networks:
-      - edge
+      - edge_prod
+      - edge_stg
       - public
 
 networks:
-  # Only the proxy and the app containers join this network; it has no route out.
-  edge:
-    name: virageawie_edge
+  # One edge network per environment, so the staging and production apps
+  # cannot reach each other. Only the proxy joins both. No route out.
+  edge_prod:
+    name: virageawie_edge_prod
+    internal: true
+  edge_stg:
+    name: virageawie_edge_stg
     internal: true
   # Published ports and certificate issuance.
   public:

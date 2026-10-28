@@ -8,10 +8,9 @@ trim_trailing_whitespace = true
 indent_style = space
 indent_size = 4
 
-[*.php]
-indent_size = 4
-
-[*.{js,jsx,ts,tsx,mjs,cjs,json,yml,yaml,css}]
+# PHP, JS, TS, JSON, and CSS use the default of 4 spaces, matching src/.editorconfig
+# and the formatters (Pint, Oxfmt). YAML uses 2.
+[*.{yml,yaml}]
 indent_size = 2
 
 [*.md]

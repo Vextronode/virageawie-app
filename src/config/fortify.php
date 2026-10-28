@@ -161,7 +161,7 @@ return [
     */
 
     'features' => [
-        Features::registration(),
+        // Public registration is disabled; accounts will be created through an invite flow.
         Features::resetPasswords(),
         Features::emailVerification(),
         Features::twoFactorAuthentication([

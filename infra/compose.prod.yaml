@@ -43,7 +43,7 @@ services:
         condition: service_healthy
     networks:
       internal_prod:
-      edge:
+      edge_prod:
         aliases:
           - virageawie-app
 
@@ -113,8 +113,8 @@ networks:
   # Outbound access (mail, R2) for the worker and backup only.
   egress_prod:
     name: virageawie_egress_prod
-  edge:
-    name: virageawie_edge
+  edge_prod:
+    name: virageawie_edge_prod
     external: true
 
 volumes:
