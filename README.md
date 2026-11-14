@@ -29,7 +29,7 @@ Aplikasi web progresif (PWA) untuk pencatatan kas dan persediaan barang. Aplikas
    docker compose -f infra/compose.local.yaml up -d
    ```
 
-   Basis data `virageawie` untuk pengembangan dan `virageawie_test` untuk pengujian dibuat otomatis. Mailpit dapat dibuka di <http://localhost:8025>.
+   PostgreSQL tersedia di `127.0.0.1:5433` (bukan port bawaan 5432, agar tidak bentrok dengan PostgreSQL yang terpasang langsung di komputer). Basis data `virageawie` untuk pengembangan dan `virageawie_test` untuk pengujian dibuat otomatis. Mailpit dapat dibuka di <http://localhost:8025>.
 
 2. Pasang dependensi dan siapkan aplikasi di folder `src/`:
 
@@ -64,7 +64,7 @@ Jika versi PHP di komputer bukan 8.4 atau ekstensinya tidak lengkap, gunakan ima
    alias vt='docker run --rm -it --network host --user "$(id -u):$(id -g)" -v "$PWD":/repo -w /repo/src virageawie-tools:local'
    ```
 
-   Jalankan alias dari folder akar repositori. Opsi `--network host` membuat container dapat mengakses PostgreSQL di `127.0.0.1:5432`.
+   Jalankan alias dari folder akar repositori. Opsi `--network host` membuat container dapat mengakses PostgreSQL di `127.0.0.1:5433`.
 
 3. Gunakan untuk Composer, Artisan, dan npm:
 
