@@ -12,7 +12,7 @@ services:
       POSTGRES_PASSWORD: ${DB_PASSWORD:-change-me-local-password}
       TZ: Asia/Jakarta
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       # PostgreSQL 18 images keep data in /var/lib/postgresql/18/docker.
       - postgres_local:/var/lib/postgresql

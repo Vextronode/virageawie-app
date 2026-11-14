@@ -1,21 +1,24 @@
-# Owners must review changes to the sensitive zones below.
-# Replace @REPLACE_ME with real GitHub users or teams (for example @org/backend).
+# Owners must review changes to the paths below.
+# When more reviewers join, add them next to the current owner (for example @org/backend).
+
+# Documentation
+/docs/                            @spectraVal
 
 # Inventory and cash logic
-/src/app/Domain/Inventory/        @REPLACE_ME
-/src/app/Domain/Cash/             @REPLACE_ME
+/src/app/Domain/Inventory/        @spectraVal
+/src/app/Domain/Cash/             @spectraVal
 
 # Database migrations
-/src/database/migrations/         @REPLACE_ME
+/src/database/migrations/         @spectraVal
 
 # Authorization and authentication
-/src/app/Policies/                @REPLACE_ME
-/src/app/Http/Middleware/         @REPLACE_ME
-/src/config/auth.php              @REPLACE_ME
+/src/app/Policies/                @spectraVal
+/src/app/Http/Middleware/         @spectraVal
+/src/config/auth.php              @spectraVal
 
 # Infrastructure and pipelines
-/infra/                           @REPLACE_ME
-/.github/workflows/               @REPLACE_ME
+/infra/                           @spectraVal
+/.github/workflows/               @spectraVal
 
 # Golden dataset for money and inventory tests
-/src/tests/Fixtures/golden/       @REPLACE_ME
+/src/tests/Fixtures/golden/       @spectraVal
