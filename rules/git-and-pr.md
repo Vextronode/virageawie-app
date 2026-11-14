@@ -10,9 +10,12 @@
 - Work branches start from an up-to-date `dev`: `feat/*`, `fix/*`, `refactor/*`, `chore/*`, `docs/*`.
 - `hotfix/*` starts from `main` and is merged back to both `main` and `dev`.
 - Name: `<type>/<short-kebab-description>`, optionally with the FR id: `feat/fr-03-cash-out`.
+- PRs are merged with a merge commit only (squash and rebase are disabled), so every commit on a work branch ends up in `dev`.
+- Bring a work branch up to date by merging `dev` into it; never rebase a branch that is already pushed.
 
 ## Commit messages (Conventional Commits)
-- Format: `<type>(<optional scope>)<optional !>: <description>`.
+- Every commit (not only the PR title) uses the format `<type>(<optional scope>)<optional !>: <description>`, because commits are kept as-is in `dev`.
+- One logical change per commit; no "wip" or "fix typo" commits left in a PR. When proposing commits, group the changes accordingly.
 - Types: `feat`, `fix`, `refactor`, `chore`, `docs`, `test`, `ci`, `build`, `perf`.
 - Scope is the module in lowercase: `cash`, `inventory`, `purchasing`, ...
 - Examples:
