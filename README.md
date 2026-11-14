@@ -11,7 +11,7 @@ Aplikasi web progresif (PWA) untuk pencatatan kas dan persediaan barang. Aplikas
 | `src/app/Models/` | Model Eloquent |
 | `src/tests/` | Pengujian Pest (`Unit`, `Feature`, `Arch`, `Fixtures/golden`) |
 | `infra/` | Dockerfile, berkas Compose, konfigurasi Caddy, dan skrip cadangan basis data |
-| `docs/` | Dokumen produk, diagram, ADR, dan glosarium |
+| `docs/` | Dokumen produk, diagram, ADR, runbook operasional, dan glosarium |
 | `.github/` | Alur kerja CI/CD, templat pull request, dan CODEOWNERS |
 
 ## Kebutuhan
@@ -118,4 +118,5 @@ Dokumen proyek tersedia di folder [`docs/`](docs/):
 - [`docs/prd/`](docs/prd/) untuk dokumen kebutuhan produk
 - [`docs/diagram/`](docs/diagram/) untuk diagram
 - [`docs/adr/`](docs/adr/) untuk catatan keputusan arsitektur
+- [`docs/runbook/`](docs/runbook/) untuk prosedur operasional, misalnya [uji dan pemulihan cadangan basis data](docs/runbook/backup-restore.md)
 - [`docs/glossary.md`](docs/glossary.md) untuk padanan istilah bisnis dan nama di kode
